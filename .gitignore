@@ -1,0 +1,27 @@
+# Node.js
+node_modules/
+npm-debug.log
+
+# Ignore production config
+/config/production.json
+
+# Ignore production env variables
+/.env.production
+
+# Ignore package-lock.json
+/package-lock.json
+
+# IDE
+.idea/
+
+# Logs
+logs
+*.log
+
+# Test results
+/coverage/
+.nyc_output/
+
+# Misc
+.DS_Store
+Thumbs.db
