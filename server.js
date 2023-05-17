@@ -1,7 +1,10 @@
 import express from "express";
 
-const app = express();
+import config from "./startups/config.js";
+import db from "./startups/db.js";
 
-app.listen(4000, () => {
-  console.log("Server running on port 4000");
-});
+const app = express();
+app.use(express.json());
+
+config(app);
+db(app);
