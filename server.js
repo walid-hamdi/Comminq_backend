@@ -5,8 +5,6 @@ import db from "./startups/db.js";
 import routes from "./startups/routes.js";
 
 const app = express();
-app.use(express.json());
-
-config(app);
+config(app, express);
 db(app);
 routes(app, express);

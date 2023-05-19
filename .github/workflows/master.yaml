@@ -33,11 +33,13 @@ jobs:
           # npm test
         env: 
           MONGO_URI: ${{ secrets.MONGO_URI }}
+          FRONTEND_HOST: ${{secrets.FRONTEND_HOST}}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
 
           CLOUDINARY_NAME: ${{ secrets.CLOUDINARY_NAME }}
           CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
           CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+
 
 
   # Heavily modified deploy job to fit render.com
