@@ -1,13 +1,9 @@
 import dotenv from "dotenv";
-import cors from "cors";
 import cloudinary from "cloudinary";
 
 dotenv.config();
 
-export default function config(app, express) {
-  app.use(express.json());
-  app.use(cors());
-
+export default function config() {
   if (process.env.NODE_ENV === "production") {
     dotenv.config({ path: ".env.production" });
   } else {
