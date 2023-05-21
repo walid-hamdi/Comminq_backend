@@ -1,7 +1,10 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import { OAuth2Client } from "google-auth-library";
 
 import User from "../models/User.js";
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 function generateToken(email) {
   const jwtSecret = process.env.JWT_SECRET;
@@ -10,13 +13,6 @@ function generateToken(email) {
 
 async function register(req, res) {
   try {
-    // Check for validation errors
-    // const errors = validationResult(req);
-    // if (!errors.isEmpty()) {
-    //   return res.status(400).json({ errors: errors.array() });
-    // }
-
-    // Extract user registration data from request body
     const { name, email, password } = req.body;
 
     // Check if the email is already registered
@@ -47,29 +43,19 @@ async function register(req, res) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
   }
-
 }
 
 async function login(req, res) {
   try {
     const { email, password } = req.body;
 
-    // const { error } = authorValidations.signinSchema.validate({
-    //   email,
-    //   password,
-    // });
-
-    // if (error) {
-    //   return res.status(400).send(error.details[0].message);
-    // }
-
-    const author = await User.findOne({ email });
-    if (!author)
+    const user = await User.findOne({ email });
+    if (!user)
       return res
         .status(404)
         .json({ error: "There is no user with this email." });
 
-    if (!bcrypt.compareSync(password, author.password))
+    if (!bcrypt.compareSync(password, user.password))
       return res
         .status(404)
         .json({ error: "There is no user with this password." });
@@ -172,9 +158,48 @@ async function deleteProfile(req, res) {
   }
 }
 
+async function googleLogin(req, res) {
+  try {
+    const { tokenId } = req.body;
+
+    // Verify the Google token ID
+    const ticket = await client.verifyIdToken({
+      idToken: tokenId,
+      audience: process.env.GOOGLE_CLIENT_ID, // Replace with your Google client ID
+    });
+
+    const { email, name, picture } = ticket.getPayload();
+
+    // Check if the user already exists in the database
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      // Create a new user if it doesn't exist
+      const newUser = new User({
+        googleId: ticket.getUserId(),
+        name,
+        email,
+        profilePicture: picture,
+      });
+
+      user = await newUser.save();
+    }
+
+    // Generate JWT token
+    const token = generateToken(email);
+
+    // Send the token and user details in the response
+    return res.json({ token, user });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+}
+
 export default {
   register,
   login,
+  googleLogin,
   profile,
   users,
   updateProfile,
