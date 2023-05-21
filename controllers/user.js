@@ -108,7 +108,6 @@ async function updateProfile(req, res) {
   try {
     // Retrieve the user information from the params object
     const { id } = req.params;
-
     const { name, email } = req.body;
 
     // Find the user in the database
@@ -117,6 +116,14 @@ async function updateProfile(req, res) {
     // Check if the user exists
     if (!user) {
       return res.status(404).json({ error: "User not found" });
+    }
+
+    // Check if the new email already exists in the database
+    const existingUser = await User.findOne({ email: email });
+
+    // If the new email belongs to another user, return an error
+    if (existingUser && existingUser._id.toString() !== id) {
+      return res.status(400).json({ error: "Email already exists" });
     }
 
     // Update the user's name and email
