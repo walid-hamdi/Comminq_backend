@@ -3,6 +3,15 @@ import bcrypt from "bcryptjs";
 import { OAuth2Client } from "google-auth-library";
 
 import User from "../models/User.js";
+import {
+  deleteSchema,
+  googleLoginSchema,
+  loginSchema,
+  profileSchema,
+  registerSchema,
+  updateSchema,
+  usersSchema,
+} from "../validators/user.js";
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -14,6 +23,12 @@ function generateToken(email) {
 async function register(req, res) {
   try {
     const { name, email, password } = req.body;
+
+    const { error } = registerSchema.validate(req.body);
+    if (error) {
+      // Return validation error message
+      return res.status(400).json({ error: error.details[0].message });
+    }
 
     // Check if the email is already registered
     const existingUser = await User.findOne({ email });
@@ -49,6 +64,12 @@ async function login(req, res) {
   try {
     const { email, password } = req.body;
 
+    const { error } = loginSchema.validate(req.body);
+    if (error) {
+      // Return validation error message
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
     const user = await User.findOne({ email });
     if (!user)
       return res
@@ -76,6 +97,12 @@ async function profile(req, res) {
     // Get the user ID from the request
     const { id } = req.params;
 
+    const { error } = profileSchema.validate(req.params);
+    if (error) {
+      // Return validation error message
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
     // Find the user in the database
     const user = await User.findById({ _id: id });
 
@@ -93,6 +120,12 @@ async function profile(req, res) {
 
 async function users(req, res) {
   try {
+    const { error } = usersSchema.validate(req.params);
+    if (error) {
+      // Return validation error message
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
     // Retrieve all users from the database
     const users = await User.find();
 
@@ -109,6 +142,11 @@ async function updateProfile(req, res) {
     // Retrieve the user information from the params object
     const { id } = req.params;
     const { name, email } = req.body;
+
+    const { error } = updateSchema.validate({ name, email });
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
 
     // Find the user in the database
     const user = await User.findById({ _id: id });
@@ -146,6 +184,12 @@ async function deleteProfile(req, res) {
     // Retrieve the user information from the params object
     const { id } = req.params;
 
+    // Validate the delete request
+    const { error } = deleteSchema.validate(req.params);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
     // Find the user in the database
     const user = await User.findById({ _id: id });
 
@@ -168,6 +212,12 @@ async function deleteProfile(req, res) {
 async function googleLogin(req, res) {
   try {
     const { tokenId } = req.body;
+
+    // Validate the google login request
+    const { error } = googleLoginSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
 
     // Verify the Google token ID
     const ticket = await client.verifyIdToken({
