@@ -1,6 +1,7 @@
 import express from "express";
 
 import userController from "../controllers/user.js";
+import { authenticate } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -123,7 +124,7 @@ router.post("/google-login", userController.googleLogin);
  *             schema:
  *               $ref: '#/components/schemas/User'
  */
-router.get("/:id", userController.profile);
+router.get("/:id", authenticate, userController.profile);
 
 /**
  * @swagger
@@ -141,7 +142,7 @@ router.get("/:id", userController.profile);
  *               items:
  *                 $ref: '#/components/schemas/User'
  */
-router.get("/", userController.users);
+router.get("/", authenticate, userController.users);
 
 /**
  * @swagger
@@ -181,7 +182,7 @@ router.get("/", userController.users);
  *                 user:
  *                   $ref: '#/components/schemas/User'
  */
-router.put("/:id", userController.updateProfile);
+router.put("/:id", authenticate, userController.updateProfile);
 
 /**
  * @swagger
@@ -206,6 +207,6 @@ router.put("/:id", userController.updateProfile);
  *                 message:
  *                   type: string
  */
-router.delete("/:id", userController.deleteProfile);
+router.delete("/:id", authenticate, userController.deleteProfile);
 
 export default router;
