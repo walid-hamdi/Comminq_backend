@@ -227,7 +227,7 @@ async function googleLogin(req, res) {
         name,
         email,
         password: hashedPassword,
-        profilePicture: picture,
+         picture,
       });
 
       user = await newUser.save();
