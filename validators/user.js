@@ -27,7 +27,9 @@ const deleteSchema = Joi.object({
 });
 
 const googleLoginSchema = Joi.object({
-  tokenId: Joi.string().required(),
+  name: Joi.string().required(),
+  email: Joi.string().email().required(),
+  picture: Joi.string().required(),
 });
 
 export {
