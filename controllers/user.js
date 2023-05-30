@@ -18,6 +18,15 @@ function generateToken(email) {
   return jwt.sign({ email }, jwtSecret);
 }
 
+function generateRandomPassword(length = 10) {
+  return cryptoRandomString({ length, type: "alphanumeric" });
+}
+
+function decodeToken(token) {
+  const jwtSecret = process.env.JWT_SECRET;
+  return jwt.verify(token, jwtSecret);
+}
+
 async function register(req, res) {
   try {
     const { name, email, password } = req.body;
@@ -92,17 +101,12 @@ async function login(req, res) {
 
 async function profile(req, res) {
   try {
-    // Get the user ID from the request
-    const { id } = req.params;
+    const token = req.cookies.comminq_auth_token;
 
-    const { error } = profileSchema.validate(req.params);
-    if (error) {
-      // Return validation error message
-      return res.status(400).json({ error: error.details[0].message });
-    }
+    const decodedToken = decodeToken(token);
+    const email = decodedToken.email;
 
-    // Find the user in the database
-    const user = await User.findById({ _id: id });
+    const user = await User.findOne({ email });
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
@@ -227,7 +231,7 @@ async function googleLogin(req, res) {
         name,
         email,
         password: hashedPassword,
-        profilePicture: picture,
+        picture,
       });
 
       user = await newUser.save();
@@ -240,12 +244,6 @@ async function googleLogin(req, res) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
   }
-}
-
-function generateRandomPassword(length = 10) {
-  const password = cryptoRandomString({ length, type: "alphanumeric" });
-
-  return password;
 }
 
 export default {
