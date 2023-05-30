@@ -1,10 +1,11 @@
 import jwt from "jsonwebtoken";
+import cookieParser from "cookie-parser";
 
 const authenticate = (req, res, next) => {
   try {
     // Check if user is authenticated
-    // For example, you can check the presence of a valid JWT token in the request headers
-    const token = req.headers.authorization;
+    // For example, you can check the presence of a valid JWT token in the request cookies
+    const token = req.cookies.comminq_auth_token;
 
     if (!token) {
       return res.status(401).json({ error: "Unauthorized" });

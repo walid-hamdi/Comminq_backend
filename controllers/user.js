@@ -101,10 +101,7 @@ async function login(req, res) {
 
 async function profile(req, res) {
   try {
-    const token = req.cookies.comminq_auth_token;
-
-    const decodedToken = decodeToken(token);
-    const email = decodedToken.email;
+    const email = req.user.email;
 
     const user = await User.findOne({ email });
 
