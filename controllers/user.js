@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import cryptoRandomString from "crypto-random-string";
 
 import User from "../models/User.js";
 import {
@@ -219,10 +220,13 @@ async function googleLogin(req, res) {
     let user = await User.findOne({ email });
 
     if (!user) {
+      const randomPassword = generateRandomPassword();
+      const hashedPassword = await bcrypt.hash(randomPassword, 10);
+
       const newUser = new User({
-        // googleId: ticket.getUserId(),
         name,
         email,
+        password: hashedPassword,
         profilePicture: picture,
       });
 
@@ -236,6 +240,12 @@ async function googleLogin(req, res) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
   }
+}
+
+function generateRandomPassword(length = 10) {
+  const password = cryptoRandomString({ length, type: "alphanumeric" });
+
+  return password;
 }
 
 export default {
