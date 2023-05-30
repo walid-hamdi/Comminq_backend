@@ -124,7 +124,7 @@ router.post("/google-login", userController.googleLogin);
  *             schema:
  *               $ref: '#/components/schemas/User'
  */
-router.get("/:id", authenticate, userController.profile);
+router.get("/profile", authenticate, userController.profile);
 
 /**
  * @swagger
