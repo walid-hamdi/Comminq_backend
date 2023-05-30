@@ -1,6 +1,5 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { OAuth2Client } from "google-auth-library";
 
 import User from "../models/User.js";
 import {
@@ -12,8 +11,6 @@ import {
   updateSchema,
   usersSchema,
 } from "../validators/user.js";
-
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 function generateToken(email) {
   const jwtSecret = process.env.JWT_SECRET;
@@ -211,29 +208,19 @@ async function deleteProfile(req, res) {
 
 async function googleLogin(req, res) {
   try {
-    const { tokenId } = req.body;
+    const { email, name, picture } = req.body;
 
-    // Validate the google login request
-    const { error } = googleLoginSchema.validate(req.body);
+    // Validate the request body
+    const { error } = googleLoginSchema.validate({ email, name, picture });
     if (error) {
       return res.status(400).json({ error: error.details[0].message });
     }
 
-    // Verify the Google token ID
-    const ticket = await client.verifyIdToken({
-      idToken: tokenId,
-      audience: process.env.GOOGLE_CLIENT_ID, // Replace with your Google client ID
-    });
-
-    const { email, name, picture } = ticket.getPayload();
-
-    // Check if the user already exists in the database
     let user = await User.findOne({ email });
 
     if (!user) {
-      // Create a new user if it doesn't exist
       const newUser = new User({
-        googleId: ticket.getUserId(),
+        // googleId: ticket.getUserId(),
         name,
         email,
         profilePicture: picture,
@@ -242,11 +229,9 @@ async function googleLogin(req, res) {
       user = await newUser.save();
     }
 
-    // Generate JWT token
     const token = generateToken(email);
 
-    // Send the token and user details in the response
-    return res.json({ token, user });
+    return res.json({ token });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
