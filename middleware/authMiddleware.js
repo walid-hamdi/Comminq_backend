@@ -1,19 +1,21 @@
 import jwt from "jsonwebtoken";
-import cookieParser from "cookie-parser";
 
 const authenticate = (req, res, next) => {
   try {
-    // Check if user is authenticated
-    // For example, you can check the presence of a valid JWT token in the request cookies
-    const token = req.cookies.comminq_auth_token;
+    const header = req.headers.authorization;
+    const token = header.split(" ")[1];
 
     if (!token) {
-      return res.status(401).json({ error: "Unauthorized" });
+      return res.status(401).json({ error: "Authorization token is missing" });
     }
 
     // Verify the JWT token
     const jwtSecret = process.env.JWT_SECRET;
-    const decoded = jwt.verify(token, jwtSecret);
+    const decoded = jwt.verify(token, jwtSecret, { algorithm: "HS256" });
+
+    if (!decoded) {
+      return res.status(401).json({ error: "Invalid token" });
+    }
 
     // Add the authenticated user to the request object
     req.user = decoded;
@@ -21,8 +23,10 @@ const authenticate = (req, res, next) => {
     // Call the next middleware or route handler
     next();
   } catch (error) {
-    // Return error response for invalid or expired token
-    return res.status(401).json({ error: "Unauthorized" });
+    if (error instanceof jwt.TokenExpiredError) {
+      return res.status(401).json({ error: "Token has expired" });
+    }
+    return res.status(401).json({ error: error.message });
   }
 };
 
