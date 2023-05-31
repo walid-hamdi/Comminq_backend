@@ -7,7 +7,6 @@ import {
   deleteSchema,
   googleLoginSchema,
   loginSchema,
-  profileSchema,
   registerSchema,
   updateSchema,
   usersSchema,
@@ -15,16 +14,11 @@ import {
 
 function generateToken(email) {
   const jwtSecret = process.env.JWT_SECRET;
-  return jwt.sign({ email }, jwtSecret);
+  return jwt.sign({ email }, jwtSecret, { algorithm: "HS256" });
 }
 
 function generateRandomPassword(length = 10) {
   return cryptoRandomString({ length, type: "alphanumeric" });
-}
-
-function decodeToken(token) {
-  const jwtSecret = process.env.JWT_SECRET;
-  return jwt.verify(token, jwtSecret);
 }
 
 async function register(req, res) {
