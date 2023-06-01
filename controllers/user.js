@@ -14,20 +14,24 @@ import {
 
 function generateToken(email) {
   const jwtSecret = process.env.JWT_SECRET;
-  return jwt.sign({ email }, jwtSecret, { algorithm: "HS256" });
+  return jwt.sign({ email }, jwtSecret, {
+    expiresIn: "1h",
+    algorithm: "HS256",
+  });
 }
 
 function generateRandomPassword(length = 10) {
   return cryptoRandomString({ length, type: "alphanumeric" });
 }
 
+// Register endpoint
 async function register(req, res) {
   try {
     const { name, email, password } = req.body;
 
+    // Validate request body
     const { error } = registerSchema.validate(req.body);
     if (error) {
-      // Return validation error message
       return res.status(400).json({ error: error.details[0].message });
     }
 
@@ -53,40 +57,45 @@ async function register(req, res) {
     // Generate JWT token
     const token = generateToken(email);
 
-    // Send the token in the response
-    return res.json({ token });
+    // Set the token as an HTTP-only cookie
+    res.setHeader("Set-Cookie", `comminq_auth_token=${token}; HttpOnly`);
+
+    // Return success response
+    return res.json({ message: "User registered successfully" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 }
 
+// Login endpoint
 async function login(req, res) {
   try {
     const { email, password } = req.body;
 
+    // Validate request body
     const { error } = loginSchema.validate(req.body);
     if (error) {
-      // Return validation error message
       return res.status(400).json({ error: error.details[0].message });
     }
 
     const user = await User.findOne({ email });
-    if (!user)
-      return res
-        .status(404)
-        .json({ error: "There is no user with this email." });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
 
-    if (!bcrypt.compareSync(password, user.password))
-      return res
-        .status(404)
-        .json({ error: "There is no user with this password." });
+    if (!bcrypt.compareSync(password, user.password)) {
+      return res.status(401).json({ error: "Invalid password" });
+    }
 
     // Generate JWT token
     const token = generateToken(email);
 
-    // Send the token in the response
-    return res.json({ token });
+    // Set the token as an HTTP-only cookie
+    res.setHeader("Set-Cookie", `comminq_auth_token=${token}; HttpOnly`);
+
+    // Return success response
+    return res.json({ message: "User logged in successfully" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
