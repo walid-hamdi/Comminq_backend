@@ -14,7 +14,8 @@ dotenv.config();
 config();
 
 app.use(express.json());
-app.use(cors({ origin: process.env.FRONTEND_HOST, credentials: true }));
+// app.use(cors({ origin: process.env.FRONTEND_HOST, credentials: true }));
+app.use(cors());
 
 // Database setup
 db(app);
