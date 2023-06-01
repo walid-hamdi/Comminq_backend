@@ -8,9 +8,15 @@ import storage from "./startups/storage.js";
 
 const app = express();
 app.use(express.json());
-app.use(cors());
-
 config();
+
+app.use(
+  cors({
+    origin: process.env.FRONTEND_HOST,
+    credentials: true,
+  })
+);
+
 db(app);
 storage();
 routes(app);
