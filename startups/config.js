@@ -9,8 +9,6 @@ export default function config() {
     dotenv.config({ path: ".env.development" });
   }
 
-  
-
   if (!process.env.JWT_SECRET) {
     throw new Error("FATAL ERROR: jwtPrivateKey is not defined.");
   }
