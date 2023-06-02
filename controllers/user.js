@@ -9,6 +9,7 @@ import {
 } from "../validators/user.js";
 
 import {
+  clearAuthTokenCookie,
   comparePassword,
   generateRandomPassword,
   generateToken,
@@ -199,6 +200,11 @@ async function googleLogin(req, res) {
   }
 }
 
+const logout = (req, res) => {
+  clearAuthTokenCookie(res);
+  return res.status(200).json({ message: "Logged out successfully" });
+};
+
 export default {
   register,
   login,
@@ -207,4 +213,5 @@ export default {
   users,
   updateProfile,
   deleteProfile,
+  logout,
 };

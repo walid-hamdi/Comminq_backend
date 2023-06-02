@@ -209,4 +209,23 @@ router.put("/:id", authenticate, userController.updateProfile);
  */
 router.delete("/:id", authenticate, userController.deleteProfile);
 
+/**
+ * @swagger
+ * /api/user/logout:
+ *   get:
+ *     summary: User logout
+ *     tags: [User]
+ *     responses:
+ *       200:
+ *         description: User logged out successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ */
+router.get("/logout", authenticate, userController.logout);
+
 export default router;

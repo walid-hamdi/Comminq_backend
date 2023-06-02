@@ -4,17 +4,21 @@ import cryptoRandomString from "crypto-random-string";
 
 function generateToken(res, email) {
   const jwtSecret = process.env.JWT_SECRET;
+  const expiresIn = "1h"; // Set the desired expiration time
+
   const token = jwt.sign({ email }, jwtSecret, {
-    expiresIn: "1h",
+    expiresIn,
     algorithm: "HS256",
   });
 
-  res.cookie("comminq_auth_token", token, {
+  const cookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production", // Use secure cookies in production
     sameSite: "strict", // Prevent CSRF attacks
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-  });
+    maxAge: expiresIn, // Set the expiration time for the cookie
+  };
+
+  res.cookie("comminq_auth_token", token, cookieOptions);
 }
 
 async function hashedPassword(password) {
@@ -29,9 +33,17 @@ function comparePassword(password, userPassword) {
   return bcrypt.compareSync(password, userPassword);
 }
 
+function clearAuthTokenCookie(res) {
+  res.cookie("comminq_auth_token", "", {
+    httpOnly: true,
+    expires: new Date(0),
+  });
+}
+
 export {
   generateToken,
   hashedPassword,
   generateRandomPassword,
   comparePassword,
+  clearAuthTokenCookie,
 };
