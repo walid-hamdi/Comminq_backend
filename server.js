@@ -12,9 +12,16 @@ app.use(express.json());
 app.use(cookieParser());
 config();
 
+// Define the allowed origins
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://comminq-frontend.vercel.app",
+];
+
+// Configure CORS middleware
 app.use(
   cors({
-    origin: process.env.FRONTEND_HOST,
+    origin: allowedOrigins,
     credentials: true,
   })
 );
