@@ -3,7 +3,7 @@ import Joi from "joi";
 const registerSchema = Joi.object({
   name: Joi.string().required(),
   email: Joi.string().email().required(),
-  password: Joi.string().required(),
+  password: Joi.string().min(6).required(),
 });
 
 const loginSchema = Joi.object({
@@ -20,6 +20,8 @@ const usersSchema = Joi.object({});
 const updateSchema = Joi.object({
   name: Joi.string().required(),
   email: Joi.string().email().required(),
+  picture: Joi.string().allow(""),
+  password: Joi.string().min(6).required(),
 });
 
 const deleteSchema = Joi.object({

@@ -1,7 +1,3 @@
-import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
-import cryptoRandomString from "crypto-random-string";
-
 import User from "../models/User.js";
 import {
   deleteSchema,
@@ -12,18 +8,12 @@ import {
   usersSchema,
 } from "../validators/user.js";
 
-function generateToken(email) {
-  const jwtSecret = process.env.JWT_SECRET;
-  return jwt.sign({ email }, jwtSecret, {
-    expiresIn: "1h",
-    algorithm: "HS256",
-  });
-}
-
-function generateRandomPassword(length = 10) {
-  return cryptoRandomString({ length, type: "alphanumeric" });
-}
-
+import {
+  comparePassword,
+  generateRandomPassword,
+  generateToken,
+  hashedPassword,
+} from "../utils/user.js";
 // Register endpoint
 async function register(req, res) {
   try {
@@ -31,34 +21,25 @@ async function register(req, res) {
 
     // Validate request body
     const { error } = registerSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
-    }
+    if (error) return res.status(400).json({ error: error.details[0].message });
 
     // Check if the email is already registered
     const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    if (existingUser)
       return res.status(400).json({ error: "Email is already registered" });
-    }
-
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create a new user
     const user = new User({
       name,
       email,
-      password: hashedPassword,
+      password: await hashedPassword(password),
     });
 
     // Save the user to the database
     await user.save();
 
     // Generate JWT token
-    const token = generateToken(email);
-
-    // Set the token as an HTTP-only cookie
-    res.setHeader("Set-Cookie", `comminq_auth_token=${token}; HttpOnly`);
+    generateToken(res, email);
 
     // Return success response
     return res.json({ message: "User registered successfully" });
@@ -75,24 +56,16 @@ async function login(req, res) {
 
     // Validate request body
     const { error } = loginSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
-    }
+    if (error) return res.status(400).json({ error: error.details[0].message });
 
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
+    if (!user) return res.status(404).json({ error: "User not found" });
 
-    if (!bcrypt.compareSync(password, user.password)) {
+    if (!comparePassword(password, user.password))
       return res.status(401).json({ error: "Invalid password" });
-    }
-
-    // Generate JWT token
-    const token = generateToken(email);
 
     // Set the token as an HTTP-only cookie
-    res.setHeader("Set-Cookie", `comminq_auth_token=${token}; HttpOnly`);
+    generateToken(res, email);
 
     // Return success response
     return res.json({ message: "User logged in successfully" });
@@ -123,10 +96,9 @@ async function profile(req, res) {
 async function users(req, res) {
   try {
     const { error } = usersSchema.validate(req.params);
-    if (error) {
+    if (error)
       // Return validation error message
       return res.status(400).json({ error: error.details[0].message });
-    }
 
     // Retrieve all users from the database
     const users = await User.find();
@@ -141,39 +113,27 @@ async function users(req, res) {
 
 async function updateProfile(req, res) {
   try {
-    // Retrieve the user information from the params object
     const { id } = req.params;
-    const { name, email } = req.body;
+    const { name, email, picture, password } = req.body;
 
     const { error } = updateSchema.validate({ name, email });
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
-    }
+    if (error) return res.status(400).json({ error: error.details[0].message });
 
-    // Find the user in the database
-    const user = await User.findById({ _id: id });
+    const user = await User.findById(id);
+    if (!user) return res.status(404).json({ error: "User not found" });
 
-    // Check if the user exists
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    // Check if the new email already exists in the database
     const existingUser = await User.findOne({ email: email });
 
-    // If the new email belongs to another user, return an error
-    if (existingUser && existingUser._id.toString() !== id) {
+    if (existingUser && existingUser._id.toString() !== id)
       return res.status(400).json({ error: "Email already exists" });
-    }
 
-    // Update the user's name and email
-    user.name = name;
-    user.email = email;
+    if (name) user.name = name;
+    if (email) user.email = email;
+    if (picture) user.picture = picture;
+    if (password) user.password = hashedPassword(password);
 
-    // Save the updated user to the database
     await user.save();
 
-    // Return the updated user profile
     return res.json(user);
   } catch (error) {
     console.error(error);
@@ -188,17 +148,13 @@ async function deleteProfile(req, res) {
 
     // Validate the delete request
     const { error } = deleteSchema.validate(req.params);
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
-    }
+    if (error) return res.status(400).json({ error: error.details[0].message });
 
     // Find the user in the database
     const user = await User.findById({ _id: id });
 
     // Check if the user exists
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
+    if (!user) return res.status(404).json({ error: "User not found" });
 
     // Delete the user
     await user.deleteOne();
@@ -217,29 +173,26 @@ async function googleLogin(req, res) {
 
     // Validate the request body
     const { error } = googleLoginSchema.validate({ email, name, picture });
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
-    }
+    if (error) return res.status(400).json({ error: error.details[0].message });
 
     let user = await User.findOne({ email });
 
     if (!user) {
       const randomPassword = generateRandomPassword();
-      const hashedPassword = await bcrypt.hash(randomPassword, 10);
 
       const newUser = new User({
         name,
         email,
-        password: hashedPassword,
+        password: hashedPassword(randomPassword),
         picture,
       });
 
       user = await newUser.save();
     }
 
-    const token = generateToken(email);
+    generateToken(email);
 
-    return res.json({ token });
+    return res.json({ message: "User logged in successfully" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
