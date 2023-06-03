@@ -14,8 +14,9 @@ import {
   generateRandomPassword,
   generateToken,
   hashedPassword,
+  googleOAuthClient,
 } from "../utils/user.js";
-// Register endpoint
+
 async function register(req, res) {
   try {
     const { name, email, password } = req.body;
@@ -170,11 +171,17 @@ async function deleteProfile(req, res) {
 
 async function googleLogin(req, res) {
   try {
-    const { email, name, picture } = req.body;
+    const { access_token } = req.body;
 
-    // Validate the request body
+    const userInfo = await googleOAuthClient.getUserInfo(access_token);
+
+    const { email, name, picture } = userInfo;
+
     const { error } = googleLoginSchema.validate({ email, name, picture });
-    if (error) return res.status(400).json({ error: error.details[0].message });
+
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
 
     let user = await User.findOne({ email });
 
@@ -200,10 +207,10 @@ async function googleLogin(req, res) {
   }
 }
 
-const logout = (req, res) => {
+function logout(req, res) {
   clearAuthTokenCookie(res);
   return res.status(200).json({ message: "Logged out successfully" });
-};
+}
 
 export default {
   register,
