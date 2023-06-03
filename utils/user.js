@@ -4,7 +4,7 @@ import cryptoRandomString from "crypto-random-string";
 
 function generateToken(res, email) {
   const jwtSecret = process.env.JWT_SECRET;
-  const expiresIn = "1h"; // Set the desired expiration time
+  const expiresIn = 60 * 60 * 1000; // Set the desired expiration time in milliseconds (1 hour in this example)
 
   const token = jwt.sign({ email }, jwtSecret, {
     expiresIn,
