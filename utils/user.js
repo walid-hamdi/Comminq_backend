@@ -26,7 +26,7 @@ async function hashedPassword(password) {
 }
 
 function generateRandomPassword(length = 10) {
-  return cryptoRandomString({ length, type: "alphanumeric" });
+  return cryptoRandomString({ length, type: "alphanumeric" }).toString();
 }
 
 function comparePassword(password, userPassword) {
