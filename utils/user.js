@@ -26,7 +26,10 @@ async function hashedPassword(password) {
 }
 
 function generateRandomPassword(length = 10) {
-  return cryptoRandomString({ length, type: "alphanumeric" }).toString();
+  return new Promise((resolve, reject) => {
+    const randomString = cryptoRandomString({ length, type: "alphanumeric" });
+    resolve(randomString);
+  });
 }
 
 function comparePassword(password, userPassword) {
@@ -39,7 +42,6 @@ function clearAuthTokenCookie(res) {
     expires: new Date(0),
   });
 }
-
 
 export {
   generateToken,
