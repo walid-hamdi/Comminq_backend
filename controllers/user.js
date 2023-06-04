@@ -222,10 +222,9 @@ async function googleLogin(req, res) {
     generateToken(res, email);
 
     return res.json({ message: "User logged in successfully" });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
+  }  catch (error) {
+  res.status(500).json({ error: error.message || "Internal Server Error" });
+}
 }
 
 function logout(req, res) {
