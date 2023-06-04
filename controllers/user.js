@@ -207,12 +207,12 @@ async function googleLogin(req, res) {
     let user = await User.findOne({ email });
 
     if (!user) {
-      const randomPassword = await generateRandomPassword();
+      const randomPassword = generateRandomPassword();
 
       const newUser = new User({
         name,
         email,
-        password: hashedPassword(randomPassword),
+        password: await hashedPassword(randomPassword),
         picture,
       });
 
