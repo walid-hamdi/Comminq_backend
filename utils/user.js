@@ -16,6 +16,8 @@ function generateToken(res, email) {
     secure: process.env.NODE_ENV === "production", // Use secure cookies in production
     sameSite: "strict", // Prevent CSRF attacks
     maxAge: expiresIn, // Set the expiration time for the cookie
+    domain: "comminq-frontend.vercel.app", // Set the cookie domain
+
   };
 
   res.cookie("comminq_auth_token", token, cookieOptions);
