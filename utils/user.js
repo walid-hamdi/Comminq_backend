@@ -1,7 +1,6 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import cryptoRandomString from "crypto-random-string";
-import { google } from "googleapis";
 
 function generateToken(res, email) {
   const jwtSecret = process.env.JWT_SECRET;
@@ -41,11 +40,6 @@ function clearAuthTokenCookie(res) {
   });
 }
 
-const googleOAuthClient = new google.auth.OAuth2(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  process.env.GOOGLE_REDIRECT_URI
-);
 
 export {
   generateToken,
@@ -53,5 +47,4 @@ export {
   generateRandomPassword,
   comparePassword,
   clearAuthTokenCookie,
-  googleOAuthClient,
 };

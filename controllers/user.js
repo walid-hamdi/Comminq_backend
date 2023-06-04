@@ -14,8 +14,8 @@ import {
   generateRandomPassword,
   generateToken,
   hashedPassword,
-  googleOAuthClient,
 } from "../utils/user.js";
+import { google } from "googleapis";
 
 async function register(req, res) {
   try {
@@ -173,12 +173,33 @@ async function googleLogin(req, res) {
   try {
     const { access_token } = req.body;
 
-    const userInfo = await googleOAuthClient.getUserInfo(access_token);
+    if (!access_token) {
+      return res.status(400).json({ error: "Access token is missing" });
+    }
 
-    const { email, name, picture } = userInfo;
+    const googleOAuthClient = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_REDIRECT_URI
+    );
+
+    // Set the access token for the OAuth client
+    googleOAuthClient.setCredentials({ access_token });
+
+    // Make a request to the Google API to get the user information
+    const { data } = await google
+      .people({ version: "v1", auth: googleOAuthClient })
+      .people.get({
+        resourceName: "people/me",
+        personFields: "emailAddresses,names,photos",
+      });
+
+    const { emailAddresses, names, photos } = data;
+    const email = emailAddresses[0].value;
+    const name = names[0].displayName;
+    const picture = photos[0].url;
 
     const { error } = googleLoginSchema.validate({ email, name, picture });
-
     if (error) {
       return res.status(400).json({ error: error.details[0].message });
     }
@@ -198,7 +219,7 @@ async function googleLogin(req, res) {
       user = await newUser.save();
     }
 
-    generateToken(email);
+    generateToken(res, email);
 
     return res.json({ message: "User logged in successfully" });
   } catch (error) {
