@@ -16,6 +16,7 @@ config();
 const allowedOrigins = [
   "http://localhost:3000",
   "https://comminq-frontend.vercel.app",
+  "http://localhost:50951",
 ];
 
 // Configure CORS middleware
@@ -25,21 +26,6 @@ app.use(
     credentials: true,
   })
 );
-
-// Add a middleware to set the Access-Control-Allow-Origin header
-app.use((req, res, next) => {
-  const allowedOrigins = [
-    "http://localhost:50951",
-    // Add other allowed origins here
-  ];
-  
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-  }
-  
-  next();
-});
 
 db(app);
 storage();
