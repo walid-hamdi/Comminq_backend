@@ -83,9 +83,7 @@ async function profile(req, res) {
 
     const user = await User.findOne({ email });
 
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
+    if (!user) return res.status(404).json({ error: "User not found" });
 
     // Return the user profile
     return res.json(user);
@@ -173,9 +171,8 @@ async function googleLogin(req, res) {
   try {
     const { access_token } = req.body;
 
-    if (!access_token) {
+    if (!access_token)
       return res.status(400).json({ error: "Access token is missing" });
-    }
 
     const googleOAuthClient = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
@@ -200,9 +197,7 @@ async function googleLogin(req, res) {
     const picture = photos[0].url;
 
     const { error } = googleLoginSchema.validate({ email, name, picture });
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
-    }
+    if (error) return res.status(400).json({ error: error.details[0].message });
 
     let user = await User.findOne({ email });
 
@@ -215,6 +210,7 @@ async function googleLogin(req, res) {
         password: await hashedPassword(randomPassword),
         picture,
       });
+      console.log("newUser:", newUser);
 
       user = await newUser.save();
     }
