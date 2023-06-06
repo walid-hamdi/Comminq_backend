@@ -16,6 +16,7 @@ config();
 const allowedOrigins = [
   "http://localhost:3000",
   "https://comminq-frontend.vercel.app",
+  "http://localhost:50951",
 ];
 
 // Configure CORS middleware

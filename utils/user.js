@@ -18,6 +18,14 @@ function generateToken(res, email) {
   //   maxAge: expiresIn, // Set the expiration time for the cookie
   // };
 
+  const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production", // Use secure cookies in production
+    sameSite: "strict", // Prevent CSRF attacks
+    maxAge: expiresIn, // Set the expiration time for the cookie
+    domain: "comminq-frontend.vercel.app", // Set the cookie domain
+  };
+
   // res.cookie("comminq_auth_token", token, cookieOptions);
   return res.json({ token });
 }
