@@ -11,14 +11,15 @@ function generateToken(res, email) {
     algorithm: "HS256",
   });
 
-  const cookieOptions = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production", // Use secure cookies in production
-    sameSite: "strict", // Prevent CSRF attacks
-    maxAge: expiresIn, // Set the expiration time for the cookie
-  };
+  // const cookieOptions = {
+  //   httpOnly: true,
+  //   secure: process.env.NODE_ENV === "production", // Use secure cookies in production
+  //   sameSite: "strict", // Prevent CSRF attacks
+  //   maxAge: expiresIn, // Set the expiration time for the cookie
+  // };
 
-  res.cookie("comminq_auth_token", token, cookieOptions);
+  // res.cookie("comminq_auth_token", token, cookieOptions);
+  return res.json({ token });
 }
 
 async function hashedPassword(password) {
