@@ -147,8 +147,8 @@ router.get("/", authenticate, userController.users);
 /**
  * @swagger
  * /api/user/{id}:
- *   put:
- *     summary: Update user profile
+ *   patch:   # Update the method from "put" to "patch"
+ *     summary: Update user profile   # Update the summary to reflect the PATCH operation
  *     tags: [User]
  *     parameters:
  *       - in: path
@@ -182,7 +182,8 @@ router.get("/", authenticate, userController.users);
  *                 user:
  *                   $ref: '#/components/schemas/User'
  */
-router.put("/:id", authenticate, userController.updateProfile);
+router.patch("/:id", authenticate, userController.updateProfile);
+
 
 /**
  * @swagger
