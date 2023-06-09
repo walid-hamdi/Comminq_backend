@@ -116,7 +116,13 @@ async function updateProfile(req, res) {
     const { id } = req.params;
     const { name, email, picture, password } = req.body;
 
-    const { error } = updateSchema.validate({ name, email });
+    const updateFields = {};
+    if (name) updateFields.name = name;
+    if (email) updateFields.email = email;
+    if (picture) updateFields.picture = picture;
+    if (password) updateFields.password = hashedPassword(password);
+
+    const { error } = updateSchema.validate(updateFields);
     if (error) return res.status(400).json({ error: error.details[0].message });
 
     const user = await User.findById(id);
@@ -127,11 +133,7 @@ async function updateProfile(req, res) {
     if (existingUser && existingUser._id.toString() !== id)
       return res.status(400).json({ error: "Email already exists" });
 
-    if (name) user.name = name;
-    if (email) user.email = email;
-    if (picture) user.picture = picture;
-    if (password) user.password = hashedPassword(password);
-
+    Object.assign(user, updateFields);
     await user.save();
 
     return res.json(user);
