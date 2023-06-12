@@ -44,7 +44,7 @@ async function register(req, res) {
     generateToken(res, email);
 
     // Return success response
-    return res.json({ message: "User registered successfully" });
+    // return res.json({ message: "User registered successfully" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -70,7 +70,7 @@ async function login(req, res) {
     generateToken(res, email);
 
     // Return success response
-    return res.json({ message: "User logged in successfully" });
+    // return res.json({ message: "User logged in successfully" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -219,7 +219,7 @@ async function googleLogin(req, res) {
 
     generateToken(res, email);
 
-    return res.json({ message: "User logged in successfully" });
+    // return res.json({ message: "User logged in successfully" });
   } catch (error) {
     res.status(500).json({ error: error.message || "Internal Server Error" });
   }
