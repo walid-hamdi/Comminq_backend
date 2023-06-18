@@ -123,7 +123,18 @@ async function updateProfile(req, res) {
     if (name) updateFields.name = name;
     if (email) updateFields.email = email;
     if (password) updateFields.password = hashedPassword(password);
-
+    if (picture) {
+      if (req.files && req.files.length) {
+        const imgObj = await cloudinary.uploadPicture(picture, `${id}/user`);
+        const imageSource = {
+          url: imgObj.url.toString(),
+          public_id: imgObj.public_id.toString(),
+        };
+        updateFields.picture = imageSource.url;
+      } else {
+        updateFields.picture = picture;
+      }
+    }
     const { error } = updateSchema.validate(updateFields);
     if (error) return res.status(400).json({ error: error.details[0].message });
 
@@ -134,17 +145,6 @@ async function updateProfile(req, res) {
     if (existingUser && existingUser._id.toString() !== id)
       return res.status(400).json({ error: "Email already exists" });
 
-    // If a new picture file is uploaded, upload it to Cloudinary
-    let imageSource = picture;
-    if (req.files && req.files.length) {
-      const imgObj = await cloudinary.uploadPicture(picture, `${id}/user`);
-      imageSource = {
-        url: imgObj.url.toString(),
-        public_id: imgObj.public_id.toString(),
-      };
-    }
-
-    updateFields.picture = imageSource.url ? imageSource.url : picture;
     Object.assign(user, updateFields);
     await user.save();
 
