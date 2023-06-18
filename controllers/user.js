@@ -1,4 +1,6 @@
 import User from "../models/User.js";
+import cloudinary from "../storage/cloudinary.js";
+
 import {
   deleteSchema,
   googleLoginSchema,
@@ -114,12 +116,12 @@ async function users(req, res) {
 async function updateProfile(req, res) {
   try {
     const { id } = req.params;
-    const { name, email, picture, password } = req.body;
+    const { name, email, password } = req.body;
+    let { picture } = req.body;
 
     const updateFields = {};
     if (name) updateFields.name = name;
     if (email) updateFields.email = email;
-    if (picture) updateFields.picture = picture;
     if (password) updateFields.password = hashedPassword(password);
 
     const { error } = updateSchema.validate(updateFields);
@@ -128,11 +130,21 @@ async function updateProfile(req, res) {
     const user = await User.findById(id);
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    const existingUser = await User.findOne({ email: email });
-
+    const existingUser = await User.findOne({ email });
     if (existingUser && existingUser._id.toString() !== id)
       return res.status(400).json({ error: "Email already exists" });
 
+    // If a new picture file is uploaded, upload it to Cloudinary
+    let imageSource = picture;
+    if (req.files && req.files.length) {
+      const imgObj = await cloudinary.uploadPicture(picture, `${id}/user`);
+      imageSource = {
+        url: imgObj.url.toString(),
+        public_id: imgObj.public_id.toString(),
+      };
+    }
+
+    updateFields.picture = imageSource.url ? imageSource.url : picture;
     Object.assign(user, updateFields);
     await user.save();
 

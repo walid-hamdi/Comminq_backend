@@ -2,6 +2,7 @@ import express from "express";
 
 import userController from "../controllers/user.js";
 import { authenticate } from "../middleware/authMiddleware.js";
+import { uploadPicture } from "../middleware/uploadUserPictureMiddleware.js";
 
 const router = express.Router();
 
@@ -182,8 +183,12 @@ router.get("/", authenticate, userController.users);
  *                 user:
  *                   $ref: '#/components/schemas/User'
  */
-router.patch("/:id", authenticate, userController.updateProfile);
-
+router.patch(
+  "/:id",
+  authenticate,
+  uploadPicture("./uploads/user"),
+  userController.updateProfile
+);
 
 /**
  * @swagger
