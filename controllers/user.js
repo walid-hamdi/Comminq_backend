@@ -1,5 +1,6 @@
 import User from "../models/User.js";
 import cloudinary from "../storage/cloudinary.js";
+import { v4 as uuidv4 } from "uuid";
 
 import {
   deleteSchema,
@@ -16,6 +17,7 @@ import {
   generateRandomPassword,
   generateToken,
   hashedPassword,
+  sendVerificationEmail,
 } from "../utils/user.js";
 import { google } from "googleapis";
 
@@ -32,15 +34,24 @@ async function register(req, res) {
     if (existingUser)
       return res.status(400).json({ error: "Email is already registered" });
 
+    // Generate a verification token and token expiry date
+    const verificationToken = uuidv4();
+    const verificationTokenExpiry = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+
     // Create a new user
     const user = new User({
       name,
       email,
       password: await hashedPassword(password),
+      verificationToken,
+      verificationTokenExpiry,
     });
 
     // Save the user to the database
     await user.save();
+
+    // Send verification email
+    sendVerificationEmail(user.email, user.verificationToken);
 
     // Generate JWT token
     generateToken(res, email);
@@ -223,6 +234,7 @@ async function googleLogin(req, res) {
         email,
         password: await hashedPassword(randomPassword),
         picture,
+        isVerified: true,
       });
       console.log("newUser:", newUser);
 
@@ -242,6 +254,34 @@ function logout(req, res) {
   return res.status(200).json({ message: "Logged out successfully" });
 }
 
+async function verifyEmail(req, res) {
+  try {
+    const { token } = req.params;
+
+    // Find the user in the database based on the verification token
+    const user = await User.findOne({ verificationToken: token });
+
+    if (!user) {
+      // Handle case where the user is not found
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Update the isVerified field to true
+    user.isVerified = true;
+
+    // Optionally, perform additional checks or validations as per your requirements
+
+    // Save the user with the updated field
+    await user.save();
+
+    // Return a response indicating successful verification
+    return res.json({ message: "Email verification successful" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+}
+
 export default {
   register,
   login,
@@ -251,4 +291,5 @@ export default {
   updateProfile,
   deleteProfile,
   logout,
+  verifyEmail,
 };

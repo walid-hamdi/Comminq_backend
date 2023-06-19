@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import cryptoRandomString from "crypto-random-string";
+import nodemailer from "nodemailer";
 
 function generateToken(res, email) {
   const jwtSecret = process.env.JWT_SECRET;
@@ -49,10 +50,44 @@ function clearAuthTokenCookie(res) {
   });
 }
 
+// send email for verification
+function sendVerificationEmail(email, verificationToken) {
+  let transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com", // SMTP server address (usually mail.your-domain.com)
+    port: 465, // Port for SMTP (usually 465)
+    secure: true, // Usually true if connecting to port 465
+    auth: {
+      user: process.env.EMAIL,
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  const domain_host = process.env.BACKEND_HOST;
+
+  const mailOptions = {
+    from: `"Comminq App" <${process.env.EMAIL}>`,
+    to: email,
+    subject: "Email Verification",
+    html: `
+      <p>Please click the following link to verify your email:</p>
+      <a href="${domain_host}/api/user/verify-email/${verificationToken}">Verify Email</a>
+    `,
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.error("Error sending verification email:", error);
+    } else {
+      console.log("Verification email sent:", info.response);
+    }
+  });
+}
+
 export {
   generateToken,
   hashedPassword,
   generateRandomPassword,
   comparePassword,
   clearAuthTokenCookie,
+  sendVerificationEmail,
 };
