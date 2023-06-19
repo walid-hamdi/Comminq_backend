@@ -234,4 +234,38 @@ router.delete("/:id", authenticate, userController.deleteProfile);
  */
 router.get("/logout", authenticate, userController.logout);
 
+/**
+ * @swagger
+ * /api/user/verify-email/{token}:
+ *   get:
+ *     summary: Verify user email
+ *     tags: [User]
+ *     parameters:
+ *       - in: path
+ *         name: token
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Email verified successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Invalid verification token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ */
+router.get("/verify-email/:token", userController.verifyEmail);
+
 export default router;
