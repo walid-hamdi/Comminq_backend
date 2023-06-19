@@ -98,6 +98,12 @@ async function profile(req, res) {
 
     if (!user) return res.status(404).json({ error: "User not found" });
 
+    // Check if the email is verified
+    if (!user.isVerified)
+      return res
+        .status(401)
+        .json({ error: "Email is not verified. Please verify your email." });
+
     // Return the user profile
     return res.json(user);
   } catch (error) {
