@@ -16,20 +16,11 @@ const authenticate = (req, res, next) => {
     if (!decoded) return res.status(401).json({ error: "Invalid token" });
 
     // Check if the email is verified
-    const { email, isEmailVerified } = decoded;
+    const { email, isVerified } = decoded;
 
-    console.log("isEmailVerified ", isEmailVerified);
+    if (!isVerified) return res.status(401).json({ error: "Email is not verified. Please verify your email." });
 
-    if (!isEmailVerified) {
-      // Return an error response
-      return res
-        .status(401)
-        .json({ error: "Email is not verified. Please verify your email." });
-
-      // Or redirect the user to an email verification page
-      // return res.redirect("/verify-email");
-    }
-
+     
     // Add the authenticated user to the request object
     req.user = decoded;
 
