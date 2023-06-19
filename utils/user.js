@@ -3,11 +3,11 @@ import bcrypt from "bcryptjs";
 import cryptoRandomString from "crypto-random-string";
 import nodemailer from "nodemailer";
 
-function generateToken(res, email) {
+function generateToken(res, email, isVerified) {
   const jwtSecret = process.env.JWT_SECRET;
   const expiresIn = 60 * 60 * 1000; // Set the desired expiration time in milliseconds (1 hour in this example)
 
-  const token = jwt.sign({ email }, jwtSecret, {
+  const token = jwt.sign({ email, isVerified }, jwtSecret, {
     expiresIn,
     algorithm: "HS256",
   });

@@ -15,12 +15,6 @@ const authenticate = (req, res, next) => {
 
     if (!decoded) return res.status(401).json({ error: "Invalid token" });
 
-    // Check if the email is verified
-    const { email, isVerified } = decoded;
-
-    if (!isVerified) return res.status(401).json({ error: "Email is not verified. Please verify your email." });
-
-     
     // Add the authenticated user to the request object
     req.user = decoded;
 
