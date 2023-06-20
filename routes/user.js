@@ -306,7 +306,7 @@ router.get("/verify-email/:token", userController.verifyEmail);
 router.post(
   "/resend-verification-email",
   authenticate,
-  resendVerificationEmail
+  userController.resendVerificationEmail
 );
 
 export default router;
