@@ -102,7 +102,10 @@ async function profile(req, res) {
     if (!user.isVerified)
       return res
         .status(401)
-        .json({ error: "Email is not verified. Please verify your email." });
+        .json({
+          error: "Email is not verified. Please verify your email.",
+          email,
+        });
 
     // Return the user profile
     return res.json(user);
@@ -288,6 +291,40 @@ async function verifyEmail(req, res) {
   }
 }
 
+async function resendVerificationEmail(req, res) {
+  try {
+    const { email } = req.body;
+
+    // Find the user in the database based on the email
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      // Handle case where the user is not found
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Generate a new verification token and token expiry date
+    const verificationToken = uuidv4();
+    const verificationTokenExpiry = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+
+    // Update the user's verification token and token expiry date
+    user.verificationToken = verificationToken;
+    user.verificationTokenExpiry = verificationTokenExpiry;
+
+    // Save the user with the updated fields
+    await user.save();
+
+    // Send the verification email with the new token
+    sendVerificationEmail(user.email, user.verificationToken);
+
+    // Return a response indicating successful resend
+    return res.json({ message: "Verification email resent successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+}
+
 export default {
   register,
   login,
@@ -298,4 +335,5 @@ export default {
   deleteProfile,
   logout,
   verifyEmail,
+  resendVerificationEmail,
 };

@@ -268,4 +268,45 @@ router.get("/logout", authenticate, userController.logout);
  */
 router.get("/verify-email/:token", userController.verifyEmail);
 
+/**
+ * @swagger
+ * /api/user/resend-verification-email:
+ *   post:
+ *     summary: Resend verification email
+ *     tags: [User]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Verification email resent successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Invalid request body or user not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ */
+router.post(
+  "/resend-verification-email",
+  authMiddleware,
+  resendVerificationEmail
+);
+
 export default router;
