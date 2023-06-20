@@ -305,7 +305,7 @@ router.get("/verify-email/:token", userController.verifyEmail);
  */
 router.post(
   "/resend-verification-email",
-  authMiddleware,
+  authenticate,
   resendVerificationEmail
 );
 
