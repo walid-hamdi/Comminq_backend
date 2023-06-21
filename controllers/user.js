@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 
 import {
   deleteSchema,
+  forgotPasswordSchema,
   googleLoginSchema,
   loginSchema,
   registerSchema,
@@ -17,6 +18,7 @@ import {
   generateRandomPassword,
   generateToken,
   hashedPassword,
+  sendPasswordResetEmail,
   sendVerificationEmail,
 } from "../utils/user.js";
 import { google } from "googleapis";
@@ -100,12 +102,10 @@ async function profile(req, res) {
 
     // Check if the email is verified
     if (!user.isVerified)
-      return res
-        .status(401)
-        .json({
-          error: "Email is not verified. Please verify your email.",
-          email,
-        });
+      return res.status(401).json({
+        error: "Email is not verified. Please verify your email.",
+        email,
+      });
 
     // Return the user profile
     return res.json(user);
@@ -325,6 +325,75 @@ async function resendVerificationEmail(req, res) {
   }
 }
 
+async function forgotPassword(req, res) {
+  try {
+    const { email } = req.body;
+
+    // Validate request body
+    const { error } = forgotPasswordSchema.validate({ email });
+    if (error) {
+      return res.status(400).json({ error: "Invalid email format" });
+    }
+
+    // Find the user in the database based on the email
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      // Handle case where the user is not found
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Generate a verification code and code expiry date
+    const verificationCode = Math.floor(100000 + Math.random() * 900000);
+    const verificationCodeExpiry = Date.now() + 10 * 60 * 1000; // Code valid for 10 minutes
+
+    // Update the user's verification code and code expiry date
+    user.verificationCode = verificationCode;
+    user.verificationCodeExpiry = verificationCodeExpiry;
+
+    // Save the user with the updated fields
+    await user.save();
+
+    // Send the password reset email with the verification code
+    sendPasswordResetEmail(user.email, verificationCode);
+
+    // Return a response indicating successful password reset request
+    return res.json({ message: "Password reset email sent successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+}
+
+async function verifyCode(req, res) {
+  try {
+    const { email, code } = req.body;
+
+    // Find the user based on the email
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      // Handle case where the user is not found
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Check if the verification code matches and is still valid
+    if (
+      user.verificationCode === code &&
+      user.verificationCodeExpiry > Date.now()
+    ) {
+      // Return a response indicating successful code verification
+      return res.json({ message: "Code verified successfully" });
+    } else {
+      // Handle case where the code is incorrect or expired
+      return res.status(400).json({ error: "Invalid verification code" });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+}
+
 export default {
   register,
   login,
@@ -336,4 +405,6 @@ export default {
   logout,
   verifyEmail,
   resendVerificationEmail,
+  forgotPassword,
+  verifyCode,
 };

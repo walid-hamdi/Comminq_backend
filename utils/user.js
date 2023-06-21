@@ -50,8 +50,7 @@ function clearAuthTokenCookie(res) {
   });
 }
 
-// send email for verification
-function sendVerificationEmail(email, verificationToken) {
+function nodeMailerConfig() {
   let transporter = nodemailer.createTransport({
     host: "smtp.gmail.com", // SMTP server address (usually mail.your-domain.com)
     port: 465, // Port for SMTP (usually 465)
@@ -62,6 +61,12 @@ function sendVerificationEmail(email, verificationToken) {
     },
   });
 
+  return transporter;
+}
+
+// send email for verification
+function sendVerificationEmail(email, verificationToken) {
+  const transporter = nodeMailerConfig();
   const domain_host = process.env.BACKEND_HOST;
 
   const mailOptions = {
@@ -83,6 +88,24 @@ function sendVerificationEmail(email, verificationToken) {
   });
 }
 
+function sendPasswordResetEmail(email, verificationCode) {
+  const transporter = nodeMailerConfig();
+  const mailOptions = {
+    from: `"Comminq App" <${process.env.EMAIL}>`,
+    to: email,
+    subject: "Password Reset",
+    text: `Your verification code: ${verificationCode}`,
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.error("Error sending reset password verification:", error);
+    } else {
+      console.log("Password Reset Verification sent:", info.response);
+    }
+  });
+}
+
 export {
   generateToken,
   hashedPassword,
@@ -90,4 +113,5 @@ export {
   comparePassword,
   clearAuthTokenCookie,
   sendVerificationEmail,
+  sendPasswordResetEmail,
 };

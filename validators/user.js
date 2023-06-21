@@ -34,6 +34,10 @@ const googleLoginSchema = Joi.object({
   picture: Joi.string().required().label("Picture"),
 });
 
+const forgotPasswordSchema = Joi.object({
+  email: Joi.string().email().required().label("Email"),
+});
+
 export {
   registerSchema,
   loginSchema,
@@ -42,4 +46,5 @@ export {
   updateSchema,
   deleteSchema,
   googleLoginSchema,
+  forgotPasswordSchema,
 };
