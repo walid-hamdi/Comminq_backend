@@ -38,6 +38,15 @@ const forgotPasswordSchema = Joi.object({
   email: Joi.string().email().required().label("Email"),
 });
 
+const changePasswordByCodeSchema = Joi.object({
+  code: Joi.string().required().label("Code"),
+  newPassword: Joi.string().min(6).required().label("New Password"),
+});
+const changePasswordSchema = Joi.object({
+  currentPassword: Joi.string().required().label("Current Password"),
+  newPassword: Joi.string().min(6).required().label("New Password"),
+});
+
 export {
   registerSchema,
   loginSchema,
@@ -47,4 +56,6 @@ export {
   deleteSchema,
   googleLoginSchema,
   forgotPasswordSchema,
+  changePasswordByCodeSchema,
+  changePasswordSchema,
 };
