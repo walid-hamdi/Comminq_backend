@@ -3,6 +3,8 @@ import cloudinary from "../storage/cloudinary.js";
 import { v4 as uuidv4 } from "uuid";
 
 import {
+  changePasswordByCodeSchema,
+  changePasswordSchema,
   deleteSchema,
   forgotPasswordSchema,
   googleLoginSchema,
@@ -142,7 +144,7 @@ async function updateProfile(req, res) {
     const updateFields = {};
     if (name) updateFields.name = name;
     if (email) updateFields.email = email;
-    if (password) updateFields.password = hashedPassword(password);
+    if (password) updateFields.password = await hashedPassword(password);
     if (picture) {
       if (req.files && req.files.length) {
         const imgObj = await cloudinary.uploadPicture(picture, `${id}/user`);
@@ -394,6 +396,62 @@ async function verifyCode(req, res) {
   }
 }
 
+async function changePasswordByCode(req, res) {
+  try {
+    const { code, newPassword } = req.body;
+
+    const { error } = changePasswordByCodeSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
+
+    // Find the user with the given verification code
+    const user = await User.findOne({ verificationCode: code });
+    if (!user) {
+      return res.status(404).json({ error: "Invalid verification code" });
+    }
+
+    // Set the new password for the user
+    user.password = await hashedPassword(newPassword);
+    user.verificationCode = ""; // Clear the verification code
+    await user.save();
+
+    return res.status(200).json({ message: "Password changed successfully" });
+  } catch (error) {
+    console.error("Error changing password:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+async function changePassword(req, res) {
+  try {
+    const { id } = req.params;
+    const { currentPassword, newPassword } = req.body;
+
+    // Validate request body
+    const { error } = changePasswordSchema.validate(req.body);
+    if (error) return res.status(400).json({ error: error.details[0].message });
+
+    // Find the user in the database
+    const user = await User.findById(id);
+
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    // Compare the current password with the stored password
+    if (!comparePassword(currentPassword, user.password))
+      return res.status(401).json({ error: "Invalid current password" });
+
+    // Update the user's password with the new password
+    user.password = await hashedPassword(newPassword);
+    await user.save();
+
+    return res.json({ message: "Password changed successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+}
+
 export default {
   register,
   login,
@@ -407,4 +465,6 @@ export default {
   resendVerificationEmail,
   forgotPassword,
   verifyCode,
+  changePasswordByCode,
+  changePassword,
 };
