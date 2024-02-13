@@ -54,16 +54,14 @@ async function register(req, res) {
     // Save the user to the database
     await user.save();
 
-    // Send verification email
     sendVerificationEmail(user.email, user.verificationToken);
 
-    // Generate JWT token
-    generateToken(res, email);
+    // generateToken(res, email);
 
-    // Return success response
-    // return res.json({ message: "User registered successfully" });
+    // return res.json({ message: "User registered in successfully" });
+    return res.json({ token: generateToken(res, email) });
   } catch (error) {
-    console.error(error);
+    console.error("Register error :", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 }
@@ -83,11 +81,13 @@ async function login(req, res) {
     if (!comparePassword(password, user.password))
       return res.status(401).json({ error: "Invalid password" });
 
-    // Set the token as an HTTP-only cookie
-    generateToken(res, email);
+    sendVerificationEmail(user.email, user.verificationToken);
 
-    // Return success response
+    // generateToken(res, email);
+
     // return res.json({ message: "User logged in successfully" });
+    const token = generateToken(res, email);
+    return res.json({ token });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -102,7 +102,6 @@ async function profile(req, res) {
 
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    // Check if the email is verified
     if (!user.isVerified)
       return res.status(401).json({
         error: "Email is not verified. Please verify your email.",
@@ -251,10 +250,10 @@ async function googleLogin(req, res) {
 
       user = await newUser.save();
     }
-
-    generateToken(res, email);
+    // generateToken(res, email);
 
     // return res.json({ message: "User logged in successfully" });
+    return res.json({ token: generateToken(res, email) });
   } catch (error) {
     res.status(500).json({ error: error.message || "Internal Server Error" });
   }
