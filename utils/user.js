@@ -14,21 +14,18 @@ function generateToken(res, email, isVerified) {
 
   // const cookieOptions = {
   //   httpOnly: true,
-  //   secure: process.env.NODE_ENV === "production", // Use secure cookies in production
-  //   sameSite: "strict", // Prevent CSRF attacks
-  //   maxAge: expiresIn, // Set the expiration time for the cookie
+  //   sameSite: "None",
+  //   maxAge: expiresIn,
   // };
 
-  // const cookieOptions = {
-  //   httpOnly: true,
-  //   secure: process.env.NODE_ENV === "production", // Use secure cookies in production
-  //   sameSite: "strict", // Prevent CSRF attacks
-  //   maxAge: expiresIn, // Set the expiration time for the cookie
-  //   domain: "comminq-frontend.vercel.app", // Set the cookie domain
-  // };
+  // if (process.env.NODE_ENV === "production") {
+  //   cookieOptions.secure = true;
+  //   cookieOptions.domain = "comminq.com";
+  // }
 
   // res.cookie("comminq_auth_token", token, cookieOptions);
-  return res.json({ token });
+
+  return token;
 }
 
 async function hashedPassword(password) {
@@ -64,7 +61,6 @@ function nodeMailerConfig() {
   return transporter;
 }
 
-// send email for verification
 function sendVerificationEmail(email, verificationToken) {
   const transporter = nodeMailerConfig();
   const domain_host = process.env.BACKEND_HOST;
