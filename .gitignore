@@ -6,10 +6,8 @@ npm-debug.log
 /config/production.json
 
 # Ignore production env variables
-/.env.production
 /.env.development
-.env.production
-.env.development
+/.env.production
 
 
 # Ignore package-lock.json
