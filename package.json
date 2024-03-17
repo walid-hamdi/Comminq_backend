@@ -31,5 +31,8 @@
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^4.6.3",
     "uuidv4": "^6.2.13"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
   }
 }
