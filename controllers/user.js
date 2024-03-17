@@ -29,20 +29,16 @@ async function register(req, res) {
   try {
     const { name, email, password } = req.body;
 
-    // Validate request body
     const { error } = registerSchema.validate(req.body);
     if (error) return res.status(400).json({ error: error.details[0].message });
 
-    // Check if the email is already registered
     const existingUser = await User.findOne({ email });
     if (existingUser)
       return res.status(400).json({ error: "Email is already registered" });
 
-    // Generate a verification token and token expiry date
     const verificationToken = uuidv4();
-    const verificationTokenExpiry = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+    const verificationTokenExpiry = Date.now() + 24 * 60 * 60 * 1000;
 
-    // Create a new user
     const user = new User({
       name,
       email,
@@ -51,14 +47,8 @@ async function register(req, res) {
       verificationTokenExpiry,
     });
 
-    // Save the user to the database
     await user.save();
-
     sendVerificationEmail(user.email, user.verificationToken);
-
-    // generateToken(res, email);
-
-    // return res.json({ message: "User registered in successfully" });
     return res.json({ token: generateToken(res, email) });
   } catch (error) {
     console.error("Register error :", error);
@@ -66,12 +56,9 @@ async function register(req, res) {
   }
 }
 
-// Login endpoint
 async function login(req, res) {
   try {
     const { email, password } = req.body;
-
-    // Validate request body
     const { error } = loginSchema.validate(req.body);
     if (error) return res.status(400).json({ error: error.details[0].message });
 
@@ -81,11 +68,9 @@ async function login(req, res) {
     if (!comparePassword(password, user.password))
       return res.status(401).json({ error: "Invalid password" });
 
-    sendVerificationEmail(user.email, user.verificationToken);
+    // if (!user.isVerified)
+    //   sendVerificationEmail(user.email, user.verificationToken);
 
-    // generateToken(res, email);
-
-    // return res.json({ message: "User logged in successfully" });
     const token = generateToken(res, email);
     return res.json({ token });
   } catch (error) {
@@ -97,9 +82,7 @@ async function login(req, res) {
 async function profile(req, res) {
   try {
     const email = req.user.email;
-
     const user = await User.findOne({ email });
-
     if (!user) return res.status(404).json({ error: "User not found" });
 
     if (!user.isVerified)
@@ -108,7 +91,6 @@ async function profile(req, res) {
         email,
       });
 
-    // Return the user profile
     return res.json(user);
   } catch (error) {
     console.error(error);
@@ -119,14 +101,9 @@ async function profile(req, res) {
 async function users(req, res) {
   try {
     const { error } = usersSchema.validate(req.params);
-    if (error)
-      // Return validation error message
-      return res.status(400).json({ error: error.details[0].message });
+    if (error) return res.status(400).json({ error: error.details[0].message });
 
-    // Retrieve all users from the database
     const users = await User.find();
-
-    // Return the list of users
     return res.json(users);
   } catch (error) {
     console.error(error);
@@ -178,23 +155,14 @@ async function updateProfile(req, res) {
 
 async function deleteProfile(req, res) {
   try {
-    // Retrieve the user information from the params object
     const { id } = req.params;
-
-    // Validate the delete request
     const { error } = deleteSchema.validate(req.params);
     if (error) return res.status(400).json({ error: error.details[0].message });
 
-    // Find the user in the database
     const user = await User.findById({ _id: id });
 
-    // Check if the user exists
     if (!user) return res.status(404).json({ error: "User not found" });
-
-    // Delete the user
     await user.deleteOne();
-
-    // Return success message
     return res.json({ message: "User deleted successfully" });
   } catch (error) {
     console.error(error);
@@ -215,10 +183,7 @@ async function googleLogin(req, res) {
       process.env.GOOGLE_REDIRECT_URI
     );
 
-    // Set the access token for the OAuth client
     googleOAuthClient.setCredentials({ access_token });
-
-    // Make a request to the Google API to get the user information
     const { data } = await google
       .people({ version: "v1", auth: googleOAuthClient })
       .people.get({
@@ -250,9 +215,7 @@ async function googleLogin(req, res) {
 
       user = await newUser.save();
     }
-    // generateToken(res, email);
 
-    // return res.json({ message: "User logged in successfully" });
     return res.json({ token: generateToken(res, email) });
   } catch (error) {
     res.status(500).json({ error: error.message || "Internal Server Error" });
@@ -268,23 +231,11 @@ async function verifyEmail(req, res) {
   try {
     const { token } = req.params;
 
-    // Find the user in the database based on the verification token
     const user = await User.findOne({ verificationToken: token });
-
-    if (!user) {
-      // Handle case where the user is not found
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    // Update the isVerified field to true
+    if (!user) return res.status(404).json({ error: "User not found" });
     user.isVerified = true;
 
-    // Optionally, perform additional checks or validations as per your requirements
-
-    // Save the user with the updated field
     await user.save();
-
-    // Return a response indicating successful verification
     return res.json({ message: "Email verification successful" });
   } catch (error) {
     console.error(error);
