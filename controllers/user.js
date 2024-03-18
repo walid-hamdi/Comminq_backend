@@ -42,6 +42,7 @@ async function register(req, res) {
     const user = new User({
       name,
       email,
+      googleLogin: false,
       password: await hashedPassword(password),
       verificationToken,
       verificationTokenExpiry,
@@ -207,11 +208,11 @@ async function googleLogin(req, res) {
       const newUser = new User({
         name,
         email,
+        googleLogin: true,
         password: await hashedPassword(randomPassword),
         picture,
         isVerified: true,
       });
-      console.log("newUser:", newUser);
 
       user = await newUser.save();
     }
@@ -220,11 +221,6 @@ async function googleLogin(req, res) {
   } catch (error) {
     res.status(500).json({ error: error.message || "Internal Server Error" });
   }
-}
-
-function logout(req, res) {
-  clearAuthTokenCookie(res);
-  return res.status(200).json({ message: "Logged out successfully" });
 }
 
 async function verifyEmail(req, res) {
@@ -246,30 +242,18 @@ async function verifyEmail(req, res) {
 async function resendVerificationEmail(req, res) {
   try {
     const { email } = req.body;
-
-    // Find the user in the database based on the email
     const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ error: "User not found" });
 
-    if (!user) {
-      // Handle case where the user is not found
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    // Generate a new verification token and token expiry date
     const verificationToken = uuidv4();
-    const verificationTokenExpiry = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
-
-    // Update the user's verification token and token expiry date
+    const verificationTokenExpiry = Date.now() + 24 * 60 * 60 * 1000;
     user.verificationToken = verificationToken;
     user.verificationTokenExpiry = verificationTokenExpiry;
 
-    // Save the user with the updated fields
     await user.save();
 
-    // Send the verification email with the new token
     sendVerificationEmail(user.email, user.verificationToken);
 
-    // Return a response indicating successful resend
     return res.json({ message: "Verification email resent successfully" });
   } catch (error) {
     console.error(error);
@@ -280,36 +264,24 @@ async function resendVerificationEmail(req, res) {
 async function forgotPassword(req, res) {
   try {
     const { email } = req.body;
-
-    // Validate request body
     const { error } = forgotPasswordSchema.validate({ email });
     if (error) {
       return res.status(400).json({ error: "Invalid email format" });
     }
 
-    // Find the user in the database based on the email
     const user = await User.findOne({ email });
 
-    if (!user) {
-      // Handle case where the user is not found
-      return res.status(404).json({ error: "User not found" });
-    }
+    if (!user) return res.status(404).json({ error: "User not found" });
 
-    // Generate a verification code and code expiry date
     const verificationCode = Math.floor(100000 + Math.random() * 900000);
-    const verificationCodeExpiry = Date.now() + 10 * 60 * 1000; // Code valid for 10 minutes
+    const verificationCodeExpiry = Date.now() + 10 * 60 * 1000;
 
-    // Update the user's verification code and code expiry date
     user.verificationCode = verificationCode;
     user.verificationCodeExpiry = verificationCodeExpiry;
-
-    // Save the user with the updated fields
     await user.save();
 
-    // Send the password reset email with the verification code
     sendPasswordResetEmail(user.email, verificationCode);
 
-    // Return a response indicating successful password reset request
     return res.json({ message: "Password reset email sent successfully" });
   } catch (error) {
     console.error(error);
@@ -320,26 +292,15 @@ async function forgotPassword(req, res) {
 async function verifyCode(req, res) {
   try {
     const { email, code } = req.body;
-
-    // Find the user based on the email
     const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ error: "User not found" });
 
-    if (!user) {
-      // Handle case where the user is not found
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    // Check if the verification code matches and is still valid
     if (
       user.verificationCode === code &&
       user.verificationCodeExpiry > Date.now()
-    ) {
-      // Return a response indicating successful code verification
+    )
       return res.json({ message: "Code verified successfully" });
-    } else {
-      // Handle case where the code is incorrect or expired
-      return res.status(400).json({ error: "Invalid verification code" });
-    }
+    else return res.status(400).json({ error: "Invalid verification code" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -349,21 +310,15 @@ async function verifyCode(req, res) {
 async function changePasswordByCode(req, res) {
   try {
     const { code, newPassword } = req.body;
-
     const { error } = changePasswordByCodeSchema.validate(req.body);
-    if (error) {
-      return res.status(400).json({ error: error.details[0].message });
-    }
+    if (error) return res.status(400).json({ error: error.details[0].message });
 
-    // Find the user with the given verification code
     const user = await User.findOne({ verificationCode: code });
-    if (!user) {
+    if (!user)
       return res.status(404).json({ error: "Invalid verification code" });
-    }
 
-    // Set the new password for the user
     user.password = await hashedPassword(newPassword);
-    user.verificationCode = ""; // Clear the verification code
+    user.verificationCode = "";
     await user.save();
 
     return res.status(200).json({ message: "Password changed successfully" });
@@ -377,21 +332,17 @@ async function changePassword(req, res) {
   try {
     const { id } = req.params;
     const { currentPassword, newPassword } = req.body;
-
-    // Validate request body
     const { error } = changePasswordSchema.validate(req.body);
     if (error) return res.status(400).json({ error: error.details[0].message });
 
-    // Find the user in the database
     const user = await User.findById(id);
-
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    // Compare the current password with the stored password
-    if (!comparePassword(currentPassword, user.password))
-      return res.status(401).json({ error: "Invalid current password" });
+    if (!user.googleLogin) {
+      if (!comparePassword(currentPassword, user.password))
+        return res.status(401).json({ error: "Invalid current password" });
+    }
 
-    // Update the user's password with the new password
     user.password = await hashedPassword(newPassword);
     await user.save();
 
@@ -400,6 +351,11 @@ async function changePassword(req, res) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
   }
+}
+
+function logout(req, res) {
+  clearAuthTokenCookie(res);
+  return res.status(200).json({ message: "Logged out successfully" });
 }
 
 export default {

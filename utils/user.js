@@ -5,25 +5,12 @@ import nodemailer from "nodemailer";
 
 function generateToken(res, email, isVerified) {
   const jwtSecret = process.env.JWT_SECRET;
-  const expiresIn = 60 * 60 * 1000; // Set the desired expiration time in milliseconds (1 hour in this example)
+  const expiresIn = 60 * 60 * 1000;
 
   const token = jwt.sign({ email, isVerified }, jwtSecret, {
     expiresIn,
     algorithm: "HS256",
   });
-
-  // const cookieOptions = {
-  //   httpOnly: true,
-  //   sameSite: "None",
-  //   maxAge: expiresIn,
-  // };
-
-  // if (process.env.NODE_ENV === "production") {
-  //   cookieOptions.secure = true;
-  //   cookieOptions.domain = "comminq.com";
-  // }
-
-  // res.cookie("comminq_auth_token", token, cookieOptions);
 
   return token;
 }
@@ -40,18 +27,11 @@ function comparePassword(password, userPassword) {
   return bcrypt.compareSync(password, userPassword);
 }
 
-function clearAuthTokenCookie(res) {
-  res.cookie("comminq_auth_token", "", {
-    httpOnly: true,
-    expires: new Date(0),
-  });
-}
-
 function nodeMailerConfig() {
   let transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com", // SMTP server address (usually mail.your-domain.com)
-    port: 465, // Port for SMTP (usually 465)
-    secure: true, // Usually true if connecting to port 465
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
     auth: {
       user: process.env.EMAIL,
       pass: process.env.EMAIL_PASS,
@@ -76,11 +56,8 @@ function sendVerificationEmail(email, verificationToken) {
   };
 
   transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      console.error("Error sending verification email:", error);
-    } else {
-      console.log("Verification email sent:", info.response);
-    }
+    if (error) console.error("Error sending verification email:", error);
+    else console.log("Verification email sent:", info.response);
   });
 }
 
@@ -107,7 +84,6 @@ export {
   hashedPassword,
   generateRandomPassword,
   comparePassword,
-  clearAuthTokenCookie,
   sendVerificationEmail,
   sendPasswordResetEmail,
 };
