@@ -48,6 +48,7 @@ const changePasswordSchema = Joi.object({
 });
 
 const changePasswordFromGoogleSchema = Joi.object({
+  currentPassword: Joi.string().optional().label("Current Password"),
   newPassword: Joi.string().min(6).required().label("New Password"),
 });
 
