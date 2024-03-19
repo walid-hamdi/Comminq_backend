@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 
 import {
   changePasswordByCodeSchema,
+  changePasswordFromGoogleSchema,
   changePasswordSchema,
   deleteSchema,
   forgotPasswordSchema,
@@ -330,7 +331,11 @@ async function changePassword(req, res) {
   try {
     const { id } = req.params;
     const { currentPassword, newPassword } = req.body;
-    const { error } = changePasswordSchema.validate(req.body);
+
+    const { error } = !user.googleLogin
+      ? changePasswordSchema.validate(req.body)
+      : changePasswordFromGoogleSchema.validate(req.body);
+
     if (error) return res.status(400).json({ error: error.details[0].message });
 
     const user = await User.findById(id);
@@ -342,6 +347,7 @@ async function changePassword(req, res) {
     }
 
     user.password = await hashedPassword(newPassword);
+    user.googleLogin = false;
     await user.save();
 
     return res.json({ message: "Password changed successfully" });

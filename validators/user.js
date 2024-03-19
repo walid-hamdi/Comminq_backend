@@ -47,6 +47,10 @@ const changePasswordSchema = Joi.object({
   newPassword: Joi.string().min(6).required().label("New Password"),
 });
 
+const changePasswordFromGoogleSchema = Joi.object({
+  newPassword: Joi.string().min(6).required().label("New Password"),
+});
+
 export {
   registerSchema,
   loginSchema,
@@ -58,4 +62,5 @@ export {
   forgotPasswordSchema,
   changePasswordByCodeSchema,
   changePasswordSchema,
+  changePasswordFromGoogleSchema,
 };
