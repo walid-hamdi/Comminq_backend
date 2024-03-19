@@ -330,15 +330,14 @@ async function changePasswordByCode(req, res) {
 async function changePassword(req, res) {
   try {
     const { id } = req.params;
-    const { currentPassword, newPassword } = req.body;
 
+    const user = await User.findById(id);
+    const { currentPassword, newPassword } = req.body;
     const { error } = !user.googleLogin
       ? changePasswordSchema.validate(req.body)
       : changePasswordFromGoogleSchema.validate(req.body);
-
     if (error) return res.status(400).json({ error: error.details[0].message });
 
-    const user = await User.findById(id);
     if (!user) return res.status(404).json({ error: "User not found" });
 
     if (!user.googleLogin) {
