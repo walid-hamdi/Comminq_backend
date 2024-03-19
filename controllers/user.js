@@ -15,7 +15,6 @@ import {
 } from "../validators/user.js";
 
 import {
-  clearAuthTokenCookie,
   comparePassword,
   generateRandomPassword,
   generateToken,
@@ -42,7 +41,6 @@ async function register(req, res) {
     const user = new User({
       name,
       email,
-      googleLogin: false,
       password: await hashedPassword(password),
       verificationToken,
       verificationTokenExpiry,
@@ -354,7 +352,6 @@ async function changePassword(req, res) {
 }
 
 function logout(req, res) {
-  clearAuthTokenCookie(res);
   return res.status(200).json({ message: "Logged out successfully" });
 }
 

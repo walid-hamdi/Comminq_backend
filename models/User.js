@@ -12,6 +12,10 @@ const userSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
     },
+    googleLogin: {
+      type: Boolean,
+      default: false,
+    },
     password: {
       type: String,
       required: true,
