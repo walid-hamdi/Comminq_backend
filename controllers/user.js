@@ -114,14 +114,21 @@ async function users(req, res) {
 async function updateProfile(req, res) {
   try {
     const { id } = req.params;
+
+    const user = await User.findById(id);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
     const { name, email, password } = req.body;
     let { picture } = req.body;
 
     const updateFields = {};
-    if (name) updateFields.name = name;
-    if (email) updateFields.email = email;
+    if (name && name !== user.name) updateFields.name = name;
+    if (email && email !== user.email) {
+      updateFields.email = email;
+      updateFields.isVerified = false;
+    }
     if (password) updateFields.password = await hashedPassword(password);
-    if (picture) {
+    if (picture && picture !== user.picture) {
       if (req.files && req.files.length) {
         const imgObj = await cloudinary.uploadPicture(picture, `${id}/user`);
         const imageSource = {
@@ -133,15 +140,19 @@ async function updateProfile(req, res) {
         updateFields.picture = picture;
       }
     }
+
     const { error } = updateSchema.validate(updateFields);
     if (error) return res.status(400).json({ error: error.details[0].message });
-
-    const user = await User.findById(id);
-    if (!user) return res.status(404).json({ error: "User not found" });
 
     const existingUser = await User.findOne({ email });
     if (existingUser && existingUser._id.toString() !== id)
       return res.status(400).json({ error: "Email already exists" });
+
+    const isUpdated = Object.keys(updateFields).some(
+      (field) => updateFields[field] !== user[field]
+    );
+
+    if (!isUpdated) return res.json(user);
 
     Object.assign(user, updateFields);
     await user.save();
@@ -152,6 +163,48 @@ async function updateProfile(req, res) {
     res.status(500).json({ error: "Internal Server Error" });
   }
 }
+
+// async function updateProfile(req, res) {
+//   try {
+//     const { id } = req.params;
+//     const { name, email, password } = req.body;
+//     let { picture } = req.body;
+
+//     const updateFields = {};
+//     if (name) updateFields.name = name;
+//     if (email) updateFields.email = email;
+//     if (password) updateFields.password = await hashedPassword(password);
+//     if (picture) {
+//       if (req.files && req.files.length) {
+//         const imgObj = await cloudinary.uploadPicture(picture, `${id}/user`);
+//         const imageSource = {
+//           url: imgObj.url.toString(),
+//           public_id: imgObj.public_id.toString(),
+//         };
+//         updateFields.picture = imageSource.url;
+//       } else {
+//         updateFields.picture = picture;
+//       }
+//     }
+//     const { error } = updateSchema.validate(updateFields);
+//     if (error) return res.status(400).json({ error: error.details[0].message });
+
+//     const user = await User.findById(id);
+//     if (!user) return res.status(404).json({ error: "User not found" });
+
+//     const existingUser = await User.findOne({ email });
+//     if (existingUser && existingUser._id.toString() !== id)
+//       return res.status(400).json({ error: "Email already exists" });
+
+//     Object.assign(user, updateFields);
+//     await user.save();
+
+//     return res.json(user);
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ error: "Internal Server Error" });
+//   }
+// }
 
 async function deleteProfile(req, res) {
   try {
