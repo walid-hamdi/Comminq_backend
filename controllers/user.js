@@ -269,7 +269,10 @@ async function googleLogin(req, res) {
       user = await newUser.save();
     }
 
-    if (user && !user.isVerified) user.isVerified = true;
+    if (user && !user.isVerified) {
+      user.isVerified = true;
+      await user.save();
+    }
 
     return res.json({ token: generateToken(res, email) });
   } catch (error) {
