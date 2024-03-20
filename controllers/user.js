@@ -269,6 +269,8 @@ async function googleLogin(req, res) {
       user = await newUser.save();
     }
 
+    if (user && !user.isVerified) user.isVerified = true;
+
     return res.json({ token: generateToken(res, email) });
   } catch (error) {
     res.status(500).json({ error: error.message || "Internal Server Error" });
