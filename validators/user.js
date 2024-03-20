@@ -22,6 +22,7 @@ const updateSchema = Joi.object({
   email: Joi.string().email().optional().label("Email"),
   picture: Joi.string().allow("").optional().label("Picture"),
   password: Joi.string().min(6).optional().label("Password"),
+  isVerified: Joi.boolean().optional().label("Is Verified"),
 });
 
 const deleteSchema = Joi.object({
