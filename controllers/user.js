@@ -355,9 +355,9 @@ async function verifyCode(req, res) {
     if (
       user.verificationCode === code &&
       user.verificationCodeExpiry > Date.now()
-    )
+    ) {
       return res.json({ message: "Code verified successfully" });
-    else return res.status(400).json({ error: "Invalid verification code" });
+    } else return res.status(400).json({ error: "Invalid verification code" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -373,6 +373,11 @@ async function changePasswordByCode(req, res) {
     const user = await User.findOne({ verificationCode: code });
     if (!user)
       return res.status(404).json({ error: "Invalid verification code" });
+
+    if (comparePassword(newPassword, user.password))
+      return res.status(400).json({
+        error: "New password must be different from the current password",
+      });
 
     user.password = await hashedPassword(newPassword);
     user.verificationCode = "";
