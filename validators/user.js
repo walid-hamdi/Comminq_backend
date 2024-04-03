@@ -20,7 +20,12 @@ const usersSchema = Joi.object({}).label("Users");
 const updateSchema = Joi.object({
   name: Joi.string().optional().label("Name"),
   email: Joi.string().email().optional().label("Email"),
-  picture: Joi.string().allow("").optional().label("Picture"),
+  picture: Joi.object({
+    url: Joi.string().allow("").optional().label("Picture URL"),
+    public_id: Joi.string().allow("").optional().label("Picture Public ID"),
+  })
+    .optional()
+    .label("Picture"),
   password: Joi.string().min(6).optional().label("Password"),
   isVerified: Joi.boolean().optional().label("Is Verified"),
 });
@@ -32,7 +37,12 @@ const deleteSchema = Joi.object({
 const googleLoginSchema = Joi.object({
   name: Joi.string().required().label("Name"),
   email: Joi.string().email().required().label("Email"),
-  picture: Joi.string().required().label("Picture"),
+  picture: Joi.object({
+    url: Joi.string().allow("").optional().label("Picture URL"),
+    public_id: Joi.string().allow("").optional().label("Picture Public ID"),
+  })
+    .optional()
+    .label("Picture"),
 });
 
 const forgotPasswordSchema = Joi.object({

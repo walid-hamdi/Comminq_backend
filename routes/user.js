@@ -217,6 +217,35 @@ router.delete("/:id", authenticate, userController.deleteProfile);
 
 /**
  * @swagger
+ * /api/user/{id}/picture:
+ *   delete:
+ *     summary: Delete user profile picture
+ *     tags: [User]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Profile picture deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ */
+router.delete(
+  "/:id/picture",
+  authenticate,
+  userController.deleteProfilePicture
+);
+
+/**
+ * @swagger
  * /api/user/logout:
  *   get:
  *     summary: User logout
