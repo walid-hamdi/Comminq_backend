@@ -21,7 +21,8 @@ const userSchema = new mongoose.Schema(
       required: true,
     },
     picture: {
-      type: String,
+      url: { type: String },
+      public_id: { type: String },
     },
     isVerified: {
       type: Boolean,

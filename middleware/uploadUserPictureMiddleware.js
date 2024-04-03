@@ -13,7 +13,7 @@ const uploadPicture = (path) => {
 
   const upload = multer({ storage });
   return [
-    upload.any("picture"),
+    upload.any("profile_picture"),
     (req, res, next) => {
       if (req.files && req.files.length) req.body.picture = req.files[0].path;
       next();

@@ -68,14 +68,72 @@ async function login(req, res) {
     if (!comparePassword(password, user.password))
       return res.status(401).json({ error: "Invalid password" });
 
-    // if (!user.isVerified)
-    //   sendVerificationEmail(user.email, user.verificationToken);
-
     const token = generateToken(res, email);
     return res.json({ token });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
+  }
+}
+
+async function googleLogin(req, res) {
+  try {
+    const { access_token } = req.body;
+    if (!access_token)
+      return res.status(400).json({ error: "Access token is missing" });
+
+    const googleOAuthClient = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_REDIRECT_URI
+    );
+
+    googleOAuthClient.setCredentials({ access_token });
+    const { data } = await google
+      .people({ version: "v1", auth: googleOAuthClient })
+      .people.get({
+        resourceName: "people/me",
+        personFields: "emailAddresses,names,photos",
+      });
+
+    const { emailAddresses, names, photos } = data;
+    const email = emailAddresses[0].value;
+    const name = names[0].displayName;
+    const photo = photos[0];
+
+    const picture = {
+      url: photo.url,
+      public_id: photo.metadata?.source?.id || null,
+    };
+
+    const { error } = googleLoginSchema.validate({ email, name, picture });
+    if (error) return res.status(400).json({ error: error.details[0].message });
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      const randomPassword = generateRandomPassword();
+
+      const newUser = new User({
+        name,
+        email,
+        googleLogin: true,
+        password: await hashedPassword(randomPassword),
+        picture,
+        isVerified: true,
+      });
+
+      user = await newUser.save();
+    }
+
+    if (user && !user.isVerified) {
+      user.isVerified = true;
+      await user.save();
+    }
+
+    return res.json({ token: generateToken(res, email) });
+  } catch (error) {
+    res.status(500).json({ error: error.message || "Internal Server Error" });
   }
 }
 
@@ -114,12 +172,10 @@ async function users(req, res) {
 async function updateProfile(req, res) {
   try {
     const { id } = req.params;
-
     const user = await User.findById(id);
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    const { name, email, password } = req.body;
-    let { picture } = req.body;
+    const { name, email, picture } = req.body;
 
     const updateFields = {};
     if (name && name !== user.name) updateFields.name = name;
@@ -127,15 +183,15 @@ async function updateProfile(req, res) {
       updateFields.email = email;
       updateFields.isVerified = false;
     }
-    if (password) updateFields.password = await hashedPassword(password);
-    if (picture && picture !== user.picture) {
+
+    if (picture && picture.public_id !== user.picture.public_id) {
       if (req.files && req.files.length) {
-        const imgObj = await cloudinary.uploadPicture(picture, `${id}/user`);
+        const imgObj = await cloudinary.uploadPicture(picture, `${id}/profile`);
         const imageSource = {
           url: imgObj.url.toString(),
           public_id: imgObj.public_id.toString(),
         };
-        updateFields.picture = imageSource.url;
+        updateFields.picture = imageSource;
       } else {
         updateFields.picture = picture;
       }
@@ -148,12 +204,6 @@ async function updateProfile(req, res) {
     if (existingUser && existingUser._id.toString() !== id)
       return res.status(400).json({ error: "Email already exists" });
 
-    const isUpdated = Object.keys(updateFields).some(
-      (field) => updateFields[field] !== user[field]
-    );
-
-    if (!isUpdated) return res.json(user);
-
     Object.assign(user, updateFields);
     await user.save();
 
@@ -164,47 +214,27 @@ async function updateProfile(req, res) {
   }
 }
 
-// async function updateProfile(req, res) {
-//   try {
-//     const { id } = req.params;
-//     const { name, email, password } = req.body;
-//     let { picture } = req.body;
+async function deleteProfilePicture(req, res) {
+  try {
+    const { id } = req.params;
+    const user = await User.findById(id);
 
-//     const updateFields = {};
-//     if (name) updateFields.name = name;
-//     if (email) updateFields.email = email;
-//     if (password) updateFields.password = await hashedPassword(password);
-//     if (picture) {
-//       if (req.files && req.files.length) {
-//         const imgObj = await cloudinary.uploadPicture(picture, `${id}/user`);
-//         const imageSource = {
-//           url: imgObj.url.toString(),
-//           public_id: imgObj.public_id.toString(),
-//         };
-//         updateFields.picture = imageSource.url;
-//       } else {
-//         updateFields.picture = picture;
-//       }
-//     }
-//     const { error } = updateSchema.validate(updateFields);
-//     if (error) return res.status(400).json({ error: error.details[0].message });
+    if (!user) return res.status(404).json({ error: "User not found" });
 
-//     const user = await User.findById(id);
-//     if (!user) return res.status(404).json({ error: "User not found" });
-
-//     const existingUser = await User.findOne({ email });
-//     if (existingUser && existingUser._id.toString() !== id)
-//       return res.status(400).json({ error: "Email already exists" });
-
-//     Object.assign(user, updateFields);
-//     await user.save();
-
-//     return res.json(user);
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ error: "Internal Server Error" });
-//   }
-// }
+    if (user.picture && user.picture.public_id) {
+      await cloudinary.removePicture(user.picture.public_id);
+      user.picture = { url: "", public_id: "" };
+      await user.save();
+      return res.json({ message: "Profile picture deleted successfully" });
+    } else {
+      return res
+        .status(400)
+        .json({ error: "User does not have a profile picture" });
+    }
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+}
 
 async function deleteProfile(req, res) {
   try {
@@ -215,68 +245,12 @@ async function deleteProfile(req, res) {
     const user = await User.findById({ _id: id });
 
     if (!user) return res.status(404).json({ error: "User not found" });
+    await cloudinary.deleteUserPictures(user.id);
     await user.deleteOne();
     return res.json({ message: "User deleted successfully" });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
-  }
-}
-
-async function googleLogin(req, res) {
-  try {
-    const { access_token } = req.body;
-
-    if (!access_token)
-      return res.status(400).json({ error: "Access token is missing" });
-
-    const googleOAuthClient = new google.auth.OAuth2(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET,
-      process.env.GOOGLE_REDIRECT_URI
-    );
-
-    googleOAuthClient.setCredentials({ access_token });
-    const { data } = await google
-      .people({ version: "v1", auth: googleOAuthClient })
-      .people.get({
-        resourceName: "people/me",
-        personFields: "emailAddresses,names,photos",
-      });
-
-    const { emailAddresses, names, photos } = data;
-    const email = emailAddresses[0].value;
-    const name = names[0].displayName;
-    const picture = photos[0].url;
-
-    const { error } = googleLoginSchema.validate({ email, name, picture });
-    if (error) return res.status(400).json({ error: error.details[0].message });
-
-    let user = await User.findOne({ email });
-
-    if (!user) {
-      const randomPassword = generateRandomPassword();
-
-      const newUser = new User({
-        name,
-        email,
-        googleLogin: true,
-        password: await hashedPassword(randomPassword),
-        picture,
-        isVerified: true,
-      });
-
-      user = await newUser.save();
-    }
-
-    if (user && !user.isVerified) {
-      user.isVerified = true;
-      await user.save();
-    }
-
-    return res.json({ token: generateToken(res, email) });
-  } catch (error) {
-    res.status(500).json({ error: error.message || "Internal Server Error" });
   }
 }
 
@@ -433,6 +407,7 @@ export default {
   profile,
   users,
   updateProfile,
+  deleteProfilePicture,
   deleteProfile,
   logout,
   verifyEmail,
